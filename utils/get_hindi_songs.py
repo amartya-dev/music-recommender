@@ -22,15 +22,15 @@ DEFAULT_FILE_NAME = 'test.csv'
 
 
 # Function to get URL for albums of the year
-def _get_year_url(year):
+def _get_year_url(current_year):
     year_string = "album/year/{}"
-    url_for_year = HOST.format(year_string.format(year))
-    return (url_for_year)
+    url_for_year = HOST.format(year_string.format(current_year))
+    return url_for_year
 
 
 # Function to get total pages for an year
-def _get_total_pages(year):
-    url_for_year = _get_year_url(year)
+def _get_total_pages(current_year):
+    url_for_year = _get_year_url(current_year)
     response = requests.get(url_for_year)
     attrs = {
         'title': 'Go to last page'
@@ -48,8 +48,8 @@ def _get_album_from_table(album_table):
     return [name, link]
 
 
-def _get_albums_for_a_page(year, page):
-    url_for_year = _get_year_url(year)
+def _get_albums_for_a_page(album_year, page):
+    url_for_year = _get_year_url(album_year)
     url_for_page = url_for_year + "/{}".format(page)
     all_albums = []
     response = requests.get(url_for_page)
@@ -64,7 +64,7 @@ def _get_albums_for_a_page(year, page):
     all_albums_tables = albums_div.findAll('table', attrs=table_attrs)
     for album_table in all_albums_tables:
         all_albums.append(_get_album_from_table(album_table))
-    return (all_albums)
+    return all_albums
 
 
 def _get_songs_from_albums(album_list, songs_store, year):
@@ -85,7 +85,6 @@ def _get_songs_from_albums(album_list, songs_store, year):
                 year
             )
     return total_processed
-            
 
 
 def _get_songs_details_from_table(song_table):
@@ -112,8 +111,8 @@ def _get_songs_details_from_table(song_table):
 
 def _get_name_and_download_link(table):
     song_name = table.find('td', attrs={
-                'colspan': '2'
-            }).a['title']
+        'colspan': '2'
+    }).a['title']
     try:
         download_link = table.find('td', attrs={
             'rowspan': '2'
@@ -122,7 +121,7 @@ def _get_name_and_download_link(table):
             download_link = None
             return None
         return [song_name, download_link]
-    except:
+    finally:
         return None
 
 
@@ -146,45 +145,46 @@ def _get_song_meta(table):
                 for director in span.findAll('a'):
                     directors.append(director.text)
         return [singers, directors]
-    except:
+    finally:
         return None
 
 
-def _process_song(song_details, songs_storage, album_name, year):
+def _process_song(song_details, songs_storage, album_name, current_year):
     if song_details:
         total = songs_storage.add_item(
             title=song_details[0],
-            singers = song_details[2],
+            singers=song_details[2],
             album=album_name,
-            year=year,
-            download_link = song_details[1],
-            directors = song_details[3]
+            year=current_year,
+            download_link=song_details[1],
+            directors=song_details[3]
         )
         return total
     else:
         return 0
 
 
-def main(year, output_dir=DEFAULT_OUT_DIR, file_name=DEFAULT_FILE_NAME):
-    logger.info("Started for year{}".format(year))
+def main(current_year, out_dir=DEFAULT_OUT_DIR, file_name=DEFAULT_FILE_NAME):
+    logger.info("Started for year{}".format(current_year))
     songs_storage = Songs(
-        year,
-        output_dir,
+        current_year,
+        out_dir,
         file_name
     )
-    total_pages = _get_total_pages(year)
-    for page in range(1, total_pages+1):
+    total_pages = _get_total_pages(current_year)
+    for page in range(1, total_pages + 1):
         albums_of_page = _get_albums_for_a_page(
-            year,
+            current_year,
             page
         )
         processed_songs = _get_songs_from_albums(
             albums_of_page,
             songs_storage,
-            year
+            current_year
         )
         if processed_songs != 0:
-            logger.info("Total songs processed for page{} : {}".format(page, processed_songs))
+            logger.info("Total songs processed for page{} : {}"
+                        .format(page, processed_songs))
     total_songs_added = songs_storage.commit()
     logger.info("Total Songs Written to disk : {}".format(total_songs_added))
 
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     if args.year:
         year = args.year
     else:
-        year = datetime.datetime.now.year()
+        year = datetime.datetime.now().year
     if args.dir:
         output_dir = args.dir
     else:
@@ -215,6 +215,6 @@ if __name__ == '__main__':
     if args.file:
         output_file = args.file
     else:
-        output_file = DEFAULT_FILE_NAME       
+        output_file = DEFAULT_FILE_NAME
 
     main(year, output_dir, output_file)
