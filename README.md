@@ -1,5 +1,5 @@
 # music-recommender
-An application to create a music recommendation system 
+A music recommendation system 
 
 # To Do
 - [x] Add a method to get songs year wise bollywood
