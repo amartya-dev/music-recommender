@@ -5,6 +5,7 @@ import argparse
 import logging
 import datetime
 
+# Importing custom defined storage class
 from storage.storage_class import Songs
 
 logging.basicConfig(
@@ -42,12 +43,15 @@ def _get_total_pages(current_year):
     return int(total_pages)
 
 
+# Function to get the album title and link
+# ToDo: Add scraper for actors and film
 def _get_album_from_table(album_table):
     name = album_table.tbody.tr.td.a['title']
     link = album_table.tbody.tr.td.a['href']
     return [name, link]
 
 
+# Retrieves all albums from a page
 def _get_albums_for_a_page(album_year, page):
     url_for_year = _get_year_url(album_year)
     url_for_page = url_for_year + "/{}".format(page)
@@ -67,6 +71,7 @@ def _get_albums_for_a_page(album_year, page):
     return all_albums
 
 
+# Function to get song tables from the album
 def _get_songs_from_albums(album_list, songs_store, year):
     total_processed = 0
     for album in album_list:
@@ -87,6 +92,7 @@ def _get_songs_from_albums(album_list, songs_store, year):
     return total_processed
 
 
+# Retrieve relavant information from the song table
 def _get_songs_details_from_table(song_table):
     list_tr = song_table.tbody.findAll('tr')
     list_returned = _get_name_and_download_link(list_tr[0])
@@ -109,6 +115,7 @@ def _get_songs_details_from_table(song_table):
         pass
 
 
+# Helper function to get song title and youtube link
 def _get_name_and_download_link(table):
     song_name = table.find('td', attrs={
         'colspan': '2'
@@ -121,10 +128,11 @@ def _get_name_and_download_link(table):
             download_link = None
             return None
         return [song_name, download_link]
-    finally:
+    except TypeError:
         return None
 
 
+# Helper function to get singers and directors from song
 def _get_song_meta(table):
     try:
         required_td = table.findAll('td')[0]
@@ -145,10 +153,11 @@ def _get_song_meta(table):
                 for director in span.findAll('a'):
                     directors.append(director.text)
         return [singers, directors]
-    finally:
+    except IndexError:
         return None
 
 
+# Add song to the storage class
 def _process_song(song_details, songs_storage, album_name, current_year):
     if song_details:
         total = songs_storage.add_item(
@@ -164,6 +173,7 @@ def _process_song(song_details, songs_storage, album_name, current_year):
         return 0
 
 
+# Driver function
 def main(current_year, out_dir=DEFAULT_OUT_DIR, file_name=DEFAULT_FILE_NAME):
     logger.info("Started for year{}".format(current_year))
     songs_storage = Songs(
@@ -172,11 +182,14 @@ def main(current_year, out_dir=DEFAULT_OUT_DIR, file_name=DEFAULT_FILE_NAME):
         file_name
     )
     total_pages = _get_total_pages(current_year)
+    logger.info("Total pages : {}".format(total_pages))
     for page in range(1, total_pages + 1):
+        logger.info("Started fetching data for page : {}".format(page))
         albums_of_page = _get_albums_for_a_page(
             current_year,
             page
         )
+        logger.info("Total albums on page : {}".format(len(albums_of_page)))
         processed_songs = _get_songs_from_albums(
             albums_of_page,
             songs_storage,
@@ -189,6 +202,7 @@ def main(current_year, out_dir=DEFAULT_OUT_DIR, file_name=DEFAULT_FILE_NAME):
     logger.info("Total Songs Written to disk : {}".format(total_songs_added))
 
 
+# Parameters for execution
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Get Hindi songs',

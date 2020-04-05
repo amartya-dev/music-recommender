@@ -102,8 +102,7 @@ class Songs:
         try:
             for value in song:
                 row.append(value)
-
-        finally:
+        except IndexError:
             logging.warning("Some parameter is missing")
         return row
 
