@@ -48,7 +48,17 @@ def _get_total_pages(current_year):
 def _get_album_from_table(album_table):
     name = album_table.tbody.tr.td.a['title']
     link = album_table.tbody.tr.td.a['href']
-    return [name, link]
+    film = None
+    details_attrs = {
+        'class': 'attribute_value black_12px'
+    }
+    for span in album_table.findAll('span', attrs=details_attrs):
+        if "Hindi" in span.text:
+            if "Non Film" in span.text:
+                film = None
+            elif "Film" in span.text:
+                film = name
+    return [name, link, film]
 
 
 # Retrieves all albums from a page
@@ -87,7 +97,8 @@ def _get_songs_from_albums(album_list, songs_store, year):
                 lst_songs,
                 songs_store,
                 album[0],
-                year
+                year,
+                album[2],
             )
     return total_processed
 
@@ -155,10 +166,12 @@ def _get_song_meta(table):
         return [singers, directors]
     except IndexError:
         return None
+    except AttributeError:
+        return None
 
 
 # Add song to the storage class
-def _process_song(song_details, songs_storage, album_name, current_year):
+def _process_song(song_details, songs_storage, album_name, current_year, film):
     if song_details:
         total = songs_storage.add_item(
             title=song_details[0],
@@ -166,7 +179,8 @@ def _process_song(song_details, songs_storage, album_name, current_year):
             album=album_name,
             year=current_year,
             download_link=song_details[1],
-            directors=song_details[3]
+            directors=song_details[3],
+            film=film
         )
         return total
     else:
@@ -196,7 +210,7 @@ def main(current_year, out_dir=DEFAULT_OUT_DIR, file_name=DEFAULT_FILE_NAME):
             current_year
         )
         if processed_songs != 0:
-            logger.info("Total songs processed for page{} : {}"
+            logger.info("Total songs processed after page {} : {}"
                         .format(page, processed_songs))
     total_songs_added = songs_storage.commit()
     logger.info("Total Songs Written to disk : {}".format(total_songs_added))
