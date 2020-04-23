@@ -5,7 +5,7 @@ A music recommendation system
 - [x] Add a method to get songs year wise bollywood
 - [x] Add a class to in general store the songs in a csv file (to be later written in database)
 - [ ] Add a method to get english songs
-- [ ] Add a utility function to download songs from specified urls
+- [x] Add a utility function to download songs from specified urls
 - [ ] A django app for playing songs, creating playlist and rating songs
 - [ ] Make a recommender system with SVD++ to deal with cold start problems
 - [ ] Integrating the recommendation with Django application
